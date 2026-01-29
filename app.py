@@ -2,7 +2,7 @@ import streamlit as st
 import database as db
 import auth
 from components.sidebar import render_sidebar
-from pages import dashboard, tasks, rewards, achievements, categories, settings
+from views import dashboard, tasks, rewards, achievements, categories, settings
 
 st.set_page_config(
     page_title="RPG Life",
