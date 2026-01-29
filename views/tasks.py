@@ -14,6 +14,11 @@ def render(user_id):
     slots_text = "Unlimited" if max_slots == -1 else f"{len(active_tasks)} / {max_slots}"
     st.caption(f"Active task slots: {slots_text}")
 
+    # Form reset counter
+    if "task_form_counter" not in st.session_state:
+        st.session_state.task_form_counter = 0
+    tc = st.session_state.task_form_counter
+
     # Create task form
     can_create = max_slots == -1 or len(active_tasks) < max_slots
     if can_create:
@@ -21,33 +26,35 @@ def render(user_id):
             categories = db.get_categories(user_id)
             cat_options = {f"{c['icon']} {c['name']}": c["id"] for c in categories}
 
-            name = st.text_input("Task Name", key="new_task_name")
-            description = st.text_area("Description (optional)", height=68, key="new_task_desc")
+            name = st.text_input("Task Name", key=f"new_task_name_{tc}")
+            description = st.text_area("Description (optional)", height=68, key=f"new_task_desc_{tc}")
             col1, col2 = st.columns(2)
             with col1:
-                cat_label = st.selectbox("Category", list(cat_options.keys()))
+                cat_label = st.selectbox("Category", list(cat_options.keys()), key=f"new_task_cat_{tc}")
             with col2:
                 difficulty = st.select_slider(
                     "Difficulty",
                     options=[1, 2, 3, 4, 5],
                     format_func=lambda d: f"{d} - {models.DIFFICULTY_LABELS[d]}",
                     value=2,
+                    key=f"new_task_diff_{tc}",
                 )
 
             is_recurring = False
             if models.is_feature_unlocked(level, "recurring_tasks"):
-                is_recurring = st.checkbox("Recurring (reappears after completion)")
+                is_recurring = st.checkbox("Recurring (reappears after completion)", key=f"new_task_recur_{tc}")
 
             preview_pts = models.calc_points_earned(difficulty, level)
             st.info(f"Completing this will earn **{preview_pts} points**")
 
-            if st.button("Create Task", use_container_width=True, key="create_task_btn"):
+            if st.button("Create Task", use_container_width=True, key=f"create_task_btn_{tc}"):
                 if not name.strip():
                     st.error("Task name is required.")
                 else:
                     db.create_task(user_id, cat_options[cat_label], name.strip(),
                                    description.strip(), difficulty, is_recurring)
                     st.success("Task created!")
+                    st.session_state.task_form_counter += 1
                     st.rerun()
     else:
         st.warning(f"You've reached your task slot limit ({max_slots}). Level up to unlock more!")
