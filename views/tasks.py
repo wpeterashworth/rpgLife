@@ -21,35 +21,34 @@ def render(user_id):
             categories = db.get_categories(user_id)
             cat_options = {f"{c['icon']} {c['name']}": c["id"] for c in categories}
 
-            with st.form("create_task"):
-                name = st.text_input("Task Name")
-                description = st.text_area("Description (optional)", height=68)
-                col1, col2 = st.columns(2)
-                with col1:
-                    cat_label = st.selectbox("Category", list(cat_options.keys()))
-                with col2:
-                    difficulty = st.select_slider(
-                        "Difficulty",
-                        options=[1, 2, 3, 4, 5],
-                        format_func=lambda d: f"{d} - {models.DIFFICULTY_LABELS[d]}",
-                        value=2,
-                    )
+            name = st.text_input("Task Name", key="new_task_name")
+            description = st.text_area("Description (optional)", height=68, key="new_task_desc")
+            col1, col2 = st.columns(2)
+            with col1:
+                cat_label = st.selectbox("Category", list(cat_options.keys()))
+            with col2:
+                difficulty = st.select_slider(
+                    "Difficulty",
+                    options=[1, 2, 3, 4, 5],
+                    format_func=lambda d: f"{d} - {models.DIFFICULTY_LABELS[d]}",
+                    value=2,
+                )
 
-                is_recurring = False
-                if models.is_feature_unlocked(level, "recurring_tasks"):
-                    is_recurring = st.checkbox("Recurring (reappears after completion)")
+            is_recurring = False
+            if models.is_feature_unlocked(level, "recurring_tasks"):
+                is_recurring = st.checkbox("Recurring (reappears after completion)")
 
-                preview_pts = models.calc_points_earned(difficulty, level)
-                st.info(f"Completing this will earn **{preview_pts} points**")
+            preview_pts = models.calc_points_earned(difficulty, level)
+            st.info(f"Completing this will earn **{preview_pts} points**")
 
-                if st.form_submit_button("Create Task", use_container_width=True):
-                    if not name.strip():
-                        st.error("Task name is required.")
-                    else:
-                        db.create_task(user_id, cat_options[cat_label], name.strip(),
-                                       description.strip(), difficulty, is_recurring)
-                        st.success("Task created!")
-                        st.rerun()
+            if st.button("Create Task", use_container_width=True, key="create_task_btn"):
+                if not name.strip():
+                    st.error("Task name is required.")
+                else:
+                    db.create_task(user_id, cat_options[cat_label], name.strip(),
+                                   description.strip(), difficulty, is_recurring)
+                    st.success("Task created!")
+                    st.rerun()
     else:
         st.warning(f"You've reached your task slot limit ({max_slots}). Level up to unlock more!")
 
