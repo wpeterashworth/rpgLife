@@ -8,27 +8,34 @@ def render(user_id):
     st.header("🎁 Rewards")
     st.metric("Available Points", f"{stats['available_points']:,}")
 
+    # Form reset counter
+    if "reward_form_counter" not in st.session_state:
+        st.session_state.reward_form_counter = 0
+    rc = st.session_state.reward_form_counter
+
     # Create reward
     with st.expander("➕ Create New Reward"):
-        with st.form("create_reward"):
-            name = st.text_input("Reward Name")
-            description = st.text_area("Description (optional)", height=68)
-            value = st.select_slider(
-                "Value Tier",
-                options=[1, 2, 3, 4, 5],
-                format_func=lambda v: f"Tier {v} — {models.reward_cost(v)} pts",
-                value=1,
-            )
-            cost = models.reward_cost(value)
-            st.info(f"This reward will cost **{cost} points** to redeem.")
+        name = st.text_input("Reward Name", key=f"new_reward_name_{rc}")
+        description = st.text_area("Description (optional)", height=68, key=f"new_reward_desc_{rc}")
+        value = st.select_slider(
+            "Value Tier",
+            options=[1, 2, 3, 4, 5],
+            format_func=lambda v: f"Tier {v} — {models.reward_cost(v)} pts",
+            value=1,
+            key=f"new_reward_value_{rc}",
+        )
 
-            if st.form_submit_button("Create Reward", use_container_width=True):
-                if not name.strip():
-                    st.error("Reward name is required.")
-                else:
-                    db.create_reward(user_id, name.strip(), description.strip(), value, cost)
-                    st.success("Reward created!")
-                    st.rerun()
+        cost = models.reward_cost(value)
+        st.info(f"This reward will cost **{cost} points** to redeem.")
+
+        if st.button("Create Reward", use_container_width=True, key=f"create_reward_btn_{rc}"):
+            if not name.strip():
+                st.error("Reward name is required.")
+            else:
+                db.create_reward(user_id, name.strip(), description.strip(), value, cost)
+                st.success("Reward created!")
+                st.session_state.reward_form_counter += 1
+                st.rerun()
 
     # Reward shop
     st.divider()
